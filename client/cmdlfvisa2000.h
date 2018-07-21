@@ -4,7 +4,7 @@
 // at your option, any later version. See the LICENSE.txt file for the text of
 // the license.
 //-----------------------------------------------------------------------------
-// Low frequency T55xx commands
+// Low frequency visa 2000 commands
 //-----------------------------------------------------------------------------
 #ifndef CMDLFVISA2000_H__
 #define CMDLFVISA2000_H__
@@ -21,17 +21,19 @@
 #include "cmdlf.h"
 #include "protocols.h"  // for T55xx config register definitions
 #include "lfdemod.h"    // parityTest
-int CmdLFVisa2k(const char *Cmd);
-int CmdVisa2kClone(const char *Cmd);
-int CmdVisa2kSim(const char *Cmd);
-int CmdVisa2kRead(const char *Cmd);
-int CmdVisa2kDemod(const char *Cmd);
+extern int CmdLFVisa2k(const char *Cmd);
+
+extern int CmdVisa2kDemod(const char *Cmd);
+extern int CmdVisa2kRead(const char *Cmd);
+extern int CmdVisa2kClone(const char *Cmd);
+extern int CmdVisa2kSim(const char *Cmd);
 
 int getvisa2kBits(uint64_t fullcode, uint8_t *bits);
+extern int detectVisa2k(uint8_t *dest, size_t *size);
 
-int usage_lf_visa2k_clone(void);
-int usage_lf_visa2k_sim(void);
-int usage_lf_visa2k_read(void);
-int usage_lf_visa2k_demod(void);
+extern int usage_lf_visa2k_clone(void);
+extern int usage_lf_visa2k_sim(void);
+//extern int usage_lf_visa2k_read(void);
+//extern int usage_lf_visa2k_demod(void);
 #endif
 

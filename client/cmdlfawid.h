@@ -21,19 +21,20 @@
 #include "cmdlf.h"	    // lf read
 #include "protocols.h"  // for T55xx config register definitions
 #include "cmdmain.h"
-#include "sleep.h"
+#include "util_posix.h"
 
 
-int CmdLFAWID(const char *Cmd);
-int CmdAWIDDemodFSK(const char *Cmd);
-int CmdAWIDRead(const char *Cmd);
-int CmdAWIDSim(const char *Cmd);
-int CmdAWIDClone(const char *Cmd);
-int CmdAWIDBrute(const char *Cmd);
-int getAWIDBits(uint8_t fmtlen, uint32_t fc, uint32_t cn, uint8_t *AWIDBits);
-int usage_lf_awid_fskdemod(void);
-int usage_lf_awid_clone(void);
-int usage_lf_awid_sim(void);
-int usage_lf_awid_brute(void);
+extern int CmdLFAWID(const char *Cmd);
+extern int CmdAWIDDemod(const char *Cmd);
+extern int CmdAWIDRead(const char *Cmd);
+extern int CmdAWIDSim(const char *Cmd);
+extern int CmdAWIDClone(const char *Cmd);
+extern int CmdAWIDBrute(const char *Cmd);
+extern int getAWIDBits(uint8_t fmtlen, uint32_t fc, uint32_t cn, uint8_t *bits);
+
+extern int usage_lf_awid_read(void);
+extern int usage_lf_awid_sim(void);
+extern int usage_lf_awid_clone(void);
+extern int usage_lf_awid_brute(void);
 
 #endif

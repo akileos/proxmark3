@@ -8,29 +8,29 @@
 //-----------------------------------------------------------------------------
 // Main binary
 //-----------------------------------------------------------------------------
+
 #ifndef PROXMARK3_H__
 #define PROXMARK3_H__
 
-// Handle platform specific includes
-#ifdef _WIN32
-// for MINGW32 environments
-  #ifndef _USE_32BIT_TIME_T
-    #define _USE_32BIT_TIME_T 1
-  #endif  
-  #include <time.h>
-  #include <windows.h>
-#else
-  #include <sys/time.h>
-#endif
-
-#define __STDC_FORMAT_MACROS 1
-#include <inttypes.h>
 #include "usb_cmd.h"
+#include "cmdscript.h"  // CmdScriptRun  
 
 #define PROXPROMPT "pm3 --> "
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void SendCommand(UsbCommand *c);
 const char *get_my_executable_path(void);
 const char *get_my_executable_directory(void);
+void main_loop(char *script_cmds_file, char *script_cmd, bool usb_present);
+
+bool hookUpPM3(void);
+void *uart_receiver(void *targ);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

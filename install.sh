@@ -1,5 +1,8 @@
-#for linux ppl
-# this should work fine on Ubuntu distros. Don't know about Kali, ...
+#!/bin/bash
+
+set -x
+
+# This is for linux ppl and it works on Ubuntu distros. Don't know about Kali.
 
 echo "Updating your system..."
 
@@ -14,10 +17,20 @@ sudo apt-get autoclean -y
 sudo apt-get clean -y
 sudo apt-get update
 
-# Copy blacklist rules into /etc/udev/rules.d
-# check the Makefile for details
-sudo make udev
+# install iceman fork - proxmark3 
+git clone https://github.com/iceman1001/proxmark3.git
+(
+   cd proxmark3 || exit 1
+   git reset --hard
+   git clean -dfx
+   make clean
+   make all
+   # Copy blacklist rules into /etc/udev/rules.d
+   # check the Makefile for details
+   sudo make udev
+)
 
 # Where is my device?
 #dmesg | tail -10
 
+echo "Done."

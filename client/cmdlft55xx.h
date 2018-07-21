@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <time.h>
+#include <ctype.h>
 #include "proxmark3.h"
 #include "ui.h"
 #include "graph.h"
@@ -21,7 +23,6 @@
 #include "cmddata.h"
 #include "cmdlf.h"
 #include "util.h"
-#include "data.h"
 #include "lfdemod.h"
 #include "cmdhf14a.h" //for getTagInfo
 
@@ -33,10 +34,10 @@
 #define REGULAR_READ_MODE_BLOCK 0xFF
 
 // config blocks
-#define T55X7_DEFAULT_CONFIG_BLOCK      0x000880E8      // compat mode, data rate 32, manchester, ST, 7 data blocks
-#define T55X7_RAW_CONFIG_BLOCK          0x000880E0      // compat mode, data rate 32, manchester, 7 data blocks
-#define T55X7_EM_UNIQUE_CONFIG_BLOCK    0x00148040      // emulate em4x02/unique - compat mode, manchester, data rate 64, 2 data blocks
-// FDXB requires data inversion and BiPhase 57 is simply BipHase 50 inverted, so we can either do it using the modulation scheme or the inversion flag
+#define T55X7_DEFAULT_CONFIG_BLOCK      0x000880E8      // ASK, compat mode, data rate 32, manchester, STT, 7 data blocks
+#define T55X7_RAW_CONFIG_BLOCK          0x000880E0      // ASK, compat mode, data rate 32, manchester, 7 data blocks
+#define T55X7_EM_UNIQUE_CONFIG_BLOCK    0x00148040      // ASK, emulate em4x02/unique - compat mode, manchester, data rate 64, 2 data blocks
+// FDXB requires data inversion and BiPhase 57 is simply BiPhase 50 inverted, so we can either do it using the modulation scheme or the inversion flag
 // we've done both below to prove that it works either way, and the modulation value for BiPhase 50 in the Atmel data sheet of binary "10001" (17) is a typo,
 // and it should actually be "10000" (16)
 // #define T55X7_FDXB_CONFIG_BLOCK         903F8080  // emulate fdx-b - xtended mode, BiPhase ('57), data rate 32, 4 data blocks
@@ -46,10 +47,12 @@
 #define T55X7_INDALA_64_CONFIG_BLOCK    0x00081040  // emulate indala 64 bit - compat mode, PSK1, psk carrier FC * 2, data rate 32, maxblock 2
 #define T55X7_INDALA_224_CONFIG_BLOCK   0x000810E0  // emulate indala 224 bit - compat mode, PSK1, psk carrier FC * 2, data rate 32, maxblock 7
 #define T55X7_GUARDPROXII_CONFIG_BLOCK	0x00150060	// bitrate 64pcb, Direct modulation, Biphase, 3 data blocks
-#define T55X7_VIKING_CONFIG_BLOCK		0x00088040	// compat mode, data rate 32, Manchester, 2 data blocks
-#define T55X7_NORALYS_CONFIG_BLOCK		0x00088C6A	// compat mode,   (NORALYS - KCP3000)
-#define T55X7_IOPROX_CONFIG_BLOCK		0x00147040  // maxblock 2
-#define T55X7_PRESCO_CONFIG_BLOCK		0x00088088  // data rate 32, Manchester, 5 data blocks, STT
+#define T55X7_VIKING_CONFIG_BLOCK		0x00088040	// ASK, compat mode, data rate 32, Manchester, 2 data blocks
+#define T55X7_NORALYS_CONFIG_BLOCK		0x00088C6A	// ASK, compat mode,   (NORALYS - KCP3000)
+#define T55X7_IOPROX_CONFIG_BLOCK		0x00147040  // ioprox - FSK2a, data rate 64, 2 data blocks
+#define T55X7_PRESCO_CONFIG_BLOCK		0x00088088  // ASK, data rate 32, Manchester, 5 data blocks, STT
+#define T55X7_NEDAP_64_CONFIG_BLOCK		0x907f0042  // BiPhase,  data rate 64, 3 data blocks
+#define T55X7_NEDAP_128_CONFIG_BLOCK	0x907f0082  // BiPhase,  data rate 64, 5 data blocks
 #define T55X7_bin 0b0010
 
 #define T5555_DEFAULT_CONFIG_BLOCK		0x6001F004  // data rate 64 , ask, manchester, 2 data blocks?
@@ -66,6 +69,8 @@ enum {
 	VIKING = 0x07,
 	NORALSYS = 0x08,
 	IOPROX = 0x09,
+	NEDAP_64 = 0x0A,
+	NEDAP_128 = 0x0B,
 } t55xx_tag;
 
 typedef struct {
@@ -123,21 +128,22 @@ typedef struct {
 	bool Q5;
 	bool ST;
 } t55xx_conf_block_t;
-t55xx_conf_block_t Get_t55xx_Config();
+
+t55xx_conf_block_t Get_t55xx_Config(void);
 void Set_t55xx_Config(t55xx_conf_block_t conf);
 
-int CmdLFT55XX(const char *Cmd);
-int CmdT55xxSetConfig(const char *Cmd);
-int CmdT55xxReadBlock(const char *Cmd);
-int CmdT55xxWriteBlock(const char *Cmd);
-int CmdT55xxReadTrace(const char *Cmd);
-int CmdT55xxInfo(const char *Cmd);
-int CmdT55xxDetect(const char *Cmd);
-int CmdResetRead(const char *Cmd);
-int CmdT55xxWipe(const char *Cmd);
-int CmdT55xxBruteForce(const char *Cmd);
+extern int CmdLFT55XX(const char *Cmd);
+extern int CmdT55xxBruteForce(const char *Cmd);
+extern int CmdT55xxSetConfig(const char *Cmd);
+extern int CmdT55xxReadBlock(const char *Cmd);
+extern int CmdT55xxWriteBlock(const char *Cmd);
+extern int CmdT55xxReadTrace(const char *Cmd);
+extern int CmdT55xxInfo(const char *Cmd);
+extern int CmdT55xxDetect(const char *Cmd);
+extern int CmdResetRead(const char *Cmd);
+extern int CmdT55xxWipe(const char *Cmd);
 
-char * GetBitRateStr(uint32_t id);
+char * GetBitRateStr(uint32_t id, bool xmode);
 char * GetSaferStr(uint32_t id);
 char * GetModulationStr( uint32_t id);
 char * GetModelStrFromCID(uint32_t cid);
@@ -147,12 +153,13 @@ void printT5xxHeader(uint8_t page);
 void printT55xxBlock(const char *demodStr);
 int printConfiguration( t55xx_conf_block_t b);
 
-bool DecodeT55xxBlock();
-bool tryDetectModulation();
+bool DecodeT55xxBlock(void);
+bool tryDetectModulation(void);
 bool testKnownConfigBlock(uint32_t block0);
+extern bool tryDetectP1(bool getData);
 bool test(uint8_t mode, uint8_t *offset, int *fndBitRate, uint8_t clk, bool *Q5);
 int special(const char *Cmd);
-int AquireData( uint8_t page, uint8_t block, bool pwdmode, uint32_t password );
+bool AquireData( uint8_t page, uint8_t block, bool pwdmode, uint32_t password );
 
 bool detectPassword(int password);
 
